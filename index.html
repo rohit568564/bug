@@ -1,5 +1,1149 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyLoanCRM - Professional Loan Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @media print { .print\\:hidden { display: none !important; } }
+    </style>
+</head>
 <body>
-<h1> subdomain takover by rohit </h1>
+    <div id="root"></div>
+    <script type="text/babel">
+
+const { useState, useEffect, useRef, useMemo } = React;
+const {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip,
+  Legend, ResponsiveContainer, AreaChart, Area
+} = Recharts;
+const {
+  LayoutDashboard, Users, PhoneCall, FileText, CheckCircle,
+  XCircle, Settings, MessageSquare, Bell, Search, Menu,
+  TrendingUp, TrendingDown, Download, HelpCircle, X, ChevronRight,
+  Filter, CreditCard, User, LogIn, Wallet, Target,
+  BookOpen, Layers, Briefcase, Plus, Send, Activity, ChevronDown,
+  Building, PieChart, Calculator, Link, Mail, Phone, Trash2, Home,
+  Eye, Edit, UserPlus, Calendar, Clock, ArrowRight, Check,
+  Paperclip, MoreVertical, CheckSquare, UploadCloud,
+  Car, Shield, Sprout, Coins, GraduationCap, AlertCircle, Printer,
+  ArrowLeft, Image: ImageIcon, Landmark, Upload, Percent, CheckCircle2,
+  Receipt, BarChart3, ScanText, Info, FileOutput, RefreshCcw, IndianRupee
+} = lucideReact;
+
+
+// --- INITIAL DATABASE SCHEMAS ---
+const initialEnquiries = [
+  { id: 'ENQ-8078', name: 'John Doe', mobile: '7075608116', loanType: 'Car Loan', occupation: 'Self Employed', amount: '\u20B98,00,000', assignedUser: 'Admin User', status: 'New', date: 'Just now', source: 'CRM Portal Entry', carCondition: 'Used Car', vehicleConditionRating: 'Good', carCompany: 'Tata Motors', carModel: 'Nexon', carVariant: 'XZA Plus (S)', carYear: '2023', carVehicleNo: 'TS08FH9214', carKms: '38450', cibilScore: '720' }
+];
+const initialCallbacks = [];
+const initialLedgerEntries = [];
+const initialLenders = [
+  { id: 1, name: "Axis Bank", logo: "", minCibil: 680, maxCibil: 900, supportedLoanTypes: ["Car Loan", "CV Loan", "Personal Loan"], minAmount: 50000, maxAmount: 5000000, interestRate: "9.5% - 14%", status: "Active", createdDate: "May 20, 2026" },
+  { id: 2, name: "State Bank of India (SBI)", logo: "", minCibil: 650, maxCibil: 900, supportedLoanTypes: ["Car Loan", "CV Loan", "Personal Loan", "Home Loan"], minAmount: 100000, maxAmount: 10000000, interestRate: "8.5% - 12%", status: "Active", createdDate: "May 20, 2026" },
+  { id: 3, name: "HDFC Bank", logo: "", minCibil: 700, maxCibil: 900, supportedLoanTypes: ["Car Loan", "Personal Loan", "Business Loan"], minAmount: 75000, maxAmount: 7500000, interestRate: "9.0% - 13.5%", status: "Active", createdDate: "May 21, 2026" }
+];
+const initialRevenue = [
+  { id: 'REV-1001', type: 'Dealer', name: 'Ravi Motors', amount: 125000, date: new Date().toISOString().split('T')[0], notes: 'May Vehicle Payout' },
+  { id: 'REV-1002', type: 'Employee', name: 'Amit Sharma', amount: 45000, date: new Date().toISOString().split('T')[0], notes: 'Incentive Structure A' }
+];
+
+
+// --- NAVIGATION GROUPS ---
+const navGroups = [
+  { title: 'Primary Workflow', items: [
+    { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+    { name: 'Enquiries', icon: HelpCircle, id: 'enquiries' },
+    { name: 'Leads', icon: Target, id: 'leads' },
+    { name: 'Callbacks', icon: PhoneCall, id: 'callbacks' },
+    { name: 'Credit Eval', icon: CreditCard, id: 'credit' },
+    { name: 'Logins', icon: LogIn, id: 'logins' },
+    { name: 'Sanctions', icon: CheckCircle, id: 'sanctions' },
+    { name: 'Disbursals', icon: Wallet, id: 'disbursals' },
+    { name: 'Payment Details', icon: Coins, id: 'payment-details' },
+    { name: 'RTO', icon: Landmark, id: 'rto' },
+    { name: 'Rejects', icon: XCircle, id: 'rejects' },
+  ]},
+  { title: 'Management', items: [
+    { name: 'Revenue & Invoices', icon: Receipt, id: 'revenue' },
+    { name: 'Users', icon: Users, id: 'users' },
+    { name: 'Lenders', icon: Building, id: 'lenders' },
+    { name: 'Reports', icon: PieChart, id: 'reports' },
+    { name: 'Accounting', icon: Calculator, id: 'accounting' },
+  ]},
+  { title: 'System', items: [
+    { name: 'Integrations', icon: Link, id: 'integrations' },
+    { name: 'Settings', icon: Settings, id: 'settings' },
+    { name: 'Knowledge Hub', icon: BookOpen, id: 'knowledge' },
+  ]}
+];
+
+
+// --- GLOBAL UTILITIES ---
+const downloadCSV = (data, filename) => {
+    if (!data || !data.length) return;
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(obj =>
+        Object.values(obj).map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    const blob = new Blob([`${headers}\n${rows}`], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const formatCurrency = (amount) => {
+  if (!amount) return 'N/A';
+  const num = parseFloat(amount.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(num)) return 'N/A';
+  return '\u20B9' + num.toLocaleString('en-IN');
+};
+
+
+// ========== PROFESSIONAL PDF GENERATION ENGINE ==========
+const downloadPDF = (record) => {
+  if (!record) {
+    alert("No record selected for PDF.");
+    return;
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("PDF library loading... Please wait 2 seconds and click again.");
+    return;
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = 0;
+    let pageNumber = 1;
+
+    const safe = (v) => (v == null || v === "") ? "N/A" : String(v);
+    const safeAmount = (v) => {
+      if (!v) return 'N/A';
+      const num = parseFloat(v.toString().replace(/[^0-9.]/g, ''));
+      if (isNaN(num)) return 'N/A';
+      return '\u20B9' + num.toLocaleString('en-IN');
+    };
+
+    // ===== PAGE HEADER =====
+    const drawHeader = (isFirstPage) => {
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, isFirstPage ? 32 : 14, 'F');
+      doc.setTextColor(255, 255, 255);
+
+      if (isFirstPage) {
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.text("MyLoanCRM", 15, 16);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text("Professional Loan Application Report", 15, 24);
+        doc.setFontSize(9);
+        doc.text("Generated: " + new Date().toLocaleString('en-IN'), pageWidth - 15, 12, { align: 'right' });
+        doc.text("Ref: " + safe(record.id), pageWidth - 15, 20, { align: 'right' });
+
+        // Status Badge
+        const statusColors = {
+          'New': [59, 130, 246], 'Sanctioned': [16, 185, 129],
+          'Disbursed': [20, 184, 166], 'Rejected': [239, 68, 68],
+          'Completed': [16, 185, 129], 'Pending': [245, 158, 11]
+        };
+        const statusColor = statusColors[record.status] || [100, 116, 139];
+        doc.setFillColor(...statusColor);
+        doc.roundedRect(pageWidth - 55, 24, 40, 6, 1, 1, 'F');
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'bold');
+        doc.text((record.status || 'NEW').toUpperCase(), pageWidth - 35, 28, { align: 'center' });
+
+        y = 40;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text("MyLoanCRM - " + safe(record.id) + " | Page " + pageNumber, 15, 10);
+        y = 20;
+      }
+    };
+
+    drawHeader(true);
+
+
+    // ===== CUSTOMER HEADER SECTION =====
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text(safe(record.name), 15, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(safe(record.loanType) + "  |  " + safe(record.mobile) + "  |  " + safe(record.email || ''), 15, y);
+    y += 10;
+
+    // Separator Line
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(15, y, pageWidth - 15, y);
+    y += 10;
+
+    // ===== CHECK PAGE OVERFLOW =====
+    const checkPageBreak = (requiredSpace) => {
+      if (y + requiredSpace > pageHeight - 30) {
+        // Footer on current page
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text("Page " + pageNumber + " | MyLoanCRM Professional Report", pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.addPage();
+        pageNumber++;
+        drawHeader(false);
+        return true;
+      }
+      return false;
+    };
+
+    // ===== SECTION RENDERER =====
+    const addSection = (title, fields, iconLabel) => {
+      checkPageBreak(30);
+
+      // Section Header with colored left border
+      doc.setFillColor(248, 250, 252);
+      doc.rect(12, y - 3, pageWidth - 24, 10, 'F');
+      doc.setFillColor(79, 70, 229);
+      doc.rect(12, y - 3, 3, 10, 'F');
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text(title, 18, y + 3);
+      y += 14;
+
+      // Section Fields
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+
+      fields.forEach(([label, value]) => {
+        checkPageBreak(10);
+        const safeValue = safe(value);
+
+        // Label
+        doc.setTextColor(100, 116, 139);
+        doc.setFont(undefined, 'normal');
+        doc.text(label, 20, y);
+
+        // Value
+        doc.setTextColor(15, 23, 42);
+        doc.setFont(undefined, 'bold');
+
+        // Handle long values with word wrap
+        const maxValueWidth = pageWidth - 110;
+        const splitValue = doc.splitTextToSize(safeValue, maxValueWidth);
+        doc.text(splitValue, 90, y);
+
+        y += (splitValue.length * 6) + 2;
+      });
+
+      y += 6;
+    };
+
+
+    // ===== PROCESS JOURNEY SECTION =====
+    checkPageBreak(50);
+    doc.setFillColor(15, 23, 42);
+    doc.rect(12, y - 3, pageWidth - 24, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("APPLICATION JOURNEY", 18, y + 3);
+    y += 16;
+
+    const journeySteps = [];
+    journeySteps.push({ step: "1. Enquiry Created", status: "Completed", date: safe(record.date) });
+    if (record.financeDetails) journeySteps.push({ step: "2. Finance Processing", status: "Completed", date: "Processed" });
+    if (record.sanctionDetails || record.status === 'Sanctioned') journeySteps.push({ step: "3. Loan Sanctioned", status: "Completed", date: "Approved" });
+    if (record.disbursalDetails || record.status === 'Disbursed') journeySteps.push({ step: "4. Loan Disbursed", status: "Completed", date: safe(record.disbursalDetails?.disbursalDate) });
+    if (record.rtoDetails) journeySteps.push({ step: "5. RTO / RC Process", status: record.rtoDetails.rcConfirmed ? "Confirmed" : "Pending", date: "Vehicle Loan" });
+    if (record.paymentDetails) journeySteps.push({ step: "6. Payment Logged", status: "Active", date: new Date(record.paymentDetails.timestamp).toLocaleDateString() });
+    if (record.status === 'Rejected') journeySteps.push({ step: "X. Application Rejected", status: "Declined", date: "System" });
+
+    doc.setFontSize(9);
+    journeySteps.forEach((step) => {
+      checkPageBreak(10);
+      const isDone = step.status === "Completed" || step.status === "Confirmed";
+      const isRej = step.status === "Declined";
+
+      // Step indicator dot
+      if (isDone) doc.setFillColor(16, 185, 129);
+      else if (isRej) doc.setFillColor(239, 68, 68);
+      else doc.setFillColor(245, 158, 11);
+      doc.circle(22, y - 1.5, 2.5, 'F');
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text(step.step, 28, y);
+
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(isDone ? 16 : isRej ? 239 : 100, isDone ? 185 : isRej ? 68 : 116, isDone ? 129 : isRej ? 68 : 139);
+      doc.text(step.status, 120, y);
+
+      doc.setTextColor(148, 163, 184);
+      doc.text(step.date, 160, y);
+      y += 8;
+    });
+    y += 8;
+
+
+    // ===== 1. BASIC LOAN DETAILS =====
+    addSection("1. LOAN REQUIREMENT DETAILS", [
+      ["Loan Product", record.product || record.loanType],
+      ["Purpose of Loan", record.purpose],
+      ["Branch", record.branch],
+      ["Required Amount", record.loanAmount ? safeAmount(record.loanAmount) : safe(record.amount)],
+      ["Required Tenure", record.tenure ? record.tenure + " months" : 'N/A'],
+      ["Lead Source", record.leadSource || record.source],
+      ["Campaign", record.campaign],
+      ["CIBIL Score", record.cibilScore],
+    ]);
+
+    // ===== 2. PERSONAL DETAILS =====
+    addSection("2. PERSONAL DETAILS", [
+      ["Full Name", record.name || ((record.firstName || '') + ' ' + (record.middleName || '') + ' ' + (record.lastName || '')).trim()],
+      ["PAN Number", record.pan],
+      ["Aadhaar Number", record.aadhar || record.aadhaar],
+      ["Date of Birth", record.dob],
+      ["Gender", record.gender],
+      ["Mobile Number", record.mobile],
+      ["Email Address", record.email],
+      ["Residence Type", record.residenceType],
+      ["Address", [record.address1 || record.addressLine1, record.city, record.state, record.pincode].filter(Boolean).join(', ')],
+    ]);
+
+    // ===== 3. EMPLOYMENT / BUSINESS DETAILS =====
+    addSection("3. EMPLOYMENT / BUSINESS DETAILS", [
+      ["Occupation Type", record.occupation],
+      ["Company / Business Name", record.companyName || record.businessName],
+      ["Company Type", record.companyType || record.businessType],
+      ["Monthly Income", record.income || record.netIncome || record.grossSalary ? safeAmount(record.income || record.netIncome || record.grossSalary) : 'N/A'],
+      ["Existing EMI / Obligations", record.emi ? safeAmount(record.emi) : 'N/A'],
+      ["GST Number", record.gstNo || record.gst],
+      ["Office Address", [record.officeAddress1, record.officeCity, record.officeState, record.officePincode].filter(Boolean).join(', ')],
+    ]);
+
+
+    // ===== 4. VEHICLE DETAILS (Car Loan / CV Loan) =====
+    if (record.loanType === 'Car Loan' || record.loanType === 'CV Loan' || record.carCompany) {
+      addSection("4. VEHICLE DETAILS & VALUATION", [
+        ["Vehicle Type", record.loanType],
+        ["Make / Company", record.carCompany],
+        ["Model", record.carModel],
+        ["Variant", record.carVariant],
+        ["Manufacturing Year", record.carYear],
+        ["Condition", record.carCondition],
+        ["Condition Rating", record.vehicleConditionRating],
+        ["Odometer (KMs)", record.carKms ? parseInt(record.carKms).toLocaleString('en-IN') + ' km' : 'N/A'],
+        ["Vehicle Registration No.", record.carVehicleNo],
+        ["Estimated Market Value", record.carEstimatedValue ? safeAmount(record.carEstimatedValue) : safe(record.amount)],
+      ]);
+
+      // Vehicle Valuation Highlight Box
+      if (record.carEstimatedValue || record.maxEligibility) {
+        checkPageBreak(25);
+        doc.setFillColor(255, 247, 237);
+        doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, 'F');
+        doc.setDrawColor(251, 191, 36);
+        doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, 'S');
+        doc.setTextColor(194, 65, 12);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        doc.text("AUTO VALUATION ENGINE RESULT", 20, y + 6);
+        doc.setFontSize(12);
+        doc.text("Market Value: " + safeAmount(record.carEstimatedValue) + "   |   Max Eligible: " + safeAmount(record.maxEligibility), 20, y + 14);
+        y += 28;
+      }
+    }
+
+    // ===== 5. FINANCE / LENDER DETAILS =====
+    if (record.financeDetails) {
+      addSection("5. FINANCE & LENDER ASSIGNMENT", [
+        ["Assigned Lender", record.financeDetails.lender],
+        ["Verification Status", record.financeDetails.verificationStatus],
+        ["Car Evaluation Required", record.financeDetails.carOption],
+        ["Evaluation Notes", record.financeDetails.carEvaluation],
+      ]);
+    }
+
+
+    // ===== 6. SANCTION DETAILS =====
+    if (record.sanctionDetails) {
+      addSection("6. SANCTION APPROVAL DETAILS", [
+        ["Sanctioned Amount", safeAmount(record.sanctionDetails.sanctionedAmount)],
+        ["Rate of Interest (ROI)", record.sanctionDetails.roi ? record.sanctionDetails.roi + "% p.a." : 'N/A'],
+        ["Approved Tenure", record.sanctionDetails.tenure ? record.sanctionDetails.tenure + " Months" : 'N/A'],
+        ["Monthly EMI", record.sanctionDetails.calculated?.emi ? safeAmount(record.sanctionDetails.calculated.emi) : 'N/A'],
+        ["Processing / Doc Charges", record.sanctionDetails.docChargesAmount ? safeAmount(record.sanctionDetails.docChargesAmount) : 'N/A'],
+        ["Other Charges", record.sanctionDetails.otherChargesAmount ? safeAmount(record.sanctionDetails.otherChargesAmount) : 'N/A'],
+        ["Payout To", (record.sanctionDetails.payoutToType || '') + ' - ' + (record.sanctionDetails.payoutToName || 'N/A')],
+        ["Payout Amount", record.sanctionDetails.payoutAmount ? safeAmount(record.sanctionDetails.payoutAmount) : 'N/A'],
+      ]);
+
+      // EMI Highlight Box
+      if (record.sanctionDetails.calculated?.emi) {
+        checkPageBreak(22);
+        doc.setFillColor(236, 253, 245);
+        doc.roundedRect(15, y, pageWidth - 30, 18, 3, 3, 'F');
+        doc.setDrawColor(16, 185, 129);
+        doc.roundedRect(15, y, pageWidth - 30, 18, 3, 3, 'S');
+        doc.setTextColor(6, 95, 70);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text("MONTHLY EMI BREAKDOWN", 20, y + 6);
+        doc.setFontSize(14);
+        doc.text(safeAmount(record.sanctionDetails.calculated.emi) + " / month", 20, y + 13);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text("for " + safe(record.sanctionDetails.tenure) + " months @ " + safe(record.sanctionDetails.roi) + "% ROI", 90, y + 13);
+        y += 26;
+      }
+    }
+
+    // ===== 7. DISBURSAL DETAILS =====
+    if (record.disbursalDetails) {
+      addSection("7. DISBURSAL & SETTLEMENT", [
+        ["Net Disbursed Amount", safeAmount(record.disbursalDetails.netDisbursalAmount)],
+        ["Disbursal Date", record.disbursalDetails.disbursalDate],
+        ["UTR / Reference No.", record.disbursalDetails.referenceNumber],
+        ["Bank Name", record.disbursalDetails.bankName],
+        ["Transfer Mode", record.disbursalDetails.mode],
+      ]);
+    }
+
+    // ===== 8. PAYMENT DETAILS =====
+    if (record.paymentDetails) {
+      addSection("8. PAYMENT / REPAYMENT LOG", [
+        ["Payment Type", record.paymentDetails.type],
+        ["Amount Paid", safeAmount(record.paymentDetails.amount)],
+        ["Payment Reference", record.paymentDetails.reference],
+        ["Payment Date", record.paymentDetails.timestamp ? new Date(record.paymentDetails.timestamp).toLocaleString('en-IN') : 'N/A'],
+        ["Notes", record.paymentDetails.notes],
+      ]);
+    }
+
+    // ===== 9. RTO DETAILS =====
+    if (record.rtoDetails) {
+      addSection("9. RTO / RC DETAILS", [
+        ["RC File Uploaded", record.rtoDetails.rcFileName || 'Not uploaded'],
+        ["RC Upload Date", record.rtoDetails.rcUploadedAt ? new Date(record.rtoDetails.rcUploadedAt).toLocaleDateString('en-IN') : 'N/A'],
+        ["RC Confirmed", record.rtoDetails.rcConfirmed === true ? 'Yes - Confirmed' : record.rtoDetails.rcConfirmed === false ? 'No - Issue Found' : 'Pending Confirmation'],
+      ]);
+    }
+
+
+    // ===== PROFESSIONAL FOOTER =====
+    checkPageBreak(40);
+    y += 10;
+
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(15, y, pageWidth - 15, y);
+    y += 12;
+
+    // Confidentiality Notice
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(15, y, pageWidth - 30, 22, 2, 2, 'F');
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text("CONFIDENTIAL - This document contains sensitive financial information.", 20, y + 6);
+    doc.text("Generated electronically via MyLoanCRM Professional. No physical signature required.", 20, y + 12);
+    doc.text("For queries, contact your assigned Relationship Manager or visit the CRM portal.", 20, y + 18);
+    y += 30;
+
+    // Final Page Number
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Page " + pageNumber + " | Generated: " + new Date().toLocaleString('en-IN') + " | MyLoanCRM v2.0", pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Save the PDF
+    const fileName = (record.id || 'Loan') + "_Professional_Report_" + new Date().toISOString().split('T')[0] + ".pdf";
+    doc.save(fileName);
+
+  } catch (error) {
+    console.error("PDF Generation Error:", error);
+    alert("Failed to generate PDF: " + (error.message || error));
+  }
+};
+
+
+// ===== AUTO CAR VALUATION ENGINE =====
+const estimateCarValue = (company, model, variant, year, condition, rating, kms) => {
+    let baseValue = 800000;
+    const makeStr = (company || '').toLowerCase();
+    const modelStr = (model || '').toLowerCase();
+    const variantStr = (variant || '').toLowerCase();
+    const y = parseInt(year) || 2020;
+    const currentYear = new Date().getFullYear();
+    const age = Math.max(0, currentYear - y);
+    const k = parseInt((kms || '0').toString().replace(/,/g, '')) || 0;
+
+    if (makeStr.includes('maruti') || makeStr.includes('suzuki')) {
+        if (modelStr.includes('swift')) baseValue = 750000;
+        else if (modelStr.includes('baleno')) baseValue = 900000;
+        else if (modelStr.includes('brezza')) baseValue = 1150000;
+        else baseValue = 700000;
+    } else if (makeStr.includes('hyundai')) {
+        if (modelStr.includes('creta')) baseValue = 1600000;
+        else if (modelStr.includes('venue')) baseValue = 1100000;
+        else if (modelStr.includes('i20')) baseValue = 950000;
+        else baseValue = 900000;
+    } else if (makeStr.includes('tata')) {
+        if (modelStr.includes('nexon')) baseValue = 1100000;
+        else if (modelStr.includes('punch')) baseValue = 850000;
+        else if (modelStr.includes('harrier')) baseValue = 1950000;
+        else baseValue = 1000000;
+    } else if (makeStr.includes('mahindra')) {
+        if (modelStr.includes('xuv700')) baseValue = 2300000;
+        else if (modelStr.includes('scorpio')) baseValue = 1850000;
+        else if (modelStr.includes('thar')) baseValue = 1750000;
+        else baseValue = 1500000;
+    } else if (makeStr.includes('toyota')) {
+        if (modelStr.includes('fortuner')) baseValue = 4200000;
+        else if (modelStr.includes('innova')) baseValue = 2700000;
+        else baseValue = 2000000;
+    } else if (makeStr.includes('kia')) {
+        if (modelStr.includes('seltos')) baseValue = 1550000;
+        else if (modelStr.includes('sonet')) baseValue = 1150000;
+        else baseValue = 1300000;
+    } else if (makeStr.includes('honda')) {
+        if (modelStr.includes('city')) baseValue = 1450000;
+        else baseValue = 1100000;
+    }
+
+    if (variantStr.includes('+') || variantStr.includes('plus') || variantStr.includes('top') || variantStr.includes('xza') || variantStr.includes('alpha')) baseValue *= 1.25;
+    else if (variantStr.includes('mid') || variantStr.includes('vxi') || variantStr.includes('zeta')) baseValue *= 1.10;
+    else if (variantStr.includes('base') || variantStr.includes('lxi') || variantStr.includes('sigma')) baseValue *= 0.90;
+
+    let depreciationRate = 0;
+    if (condition === 'Used Car' || age > 0) {
+        if (age === 1) depreciationRate = 0.12;
+        else if (age === 2) depreciationRate = 0.20;
+        else if (age === 3) depreciationRate = 0.30;
+        else if (age === 4) depreciationRate = 0.40;
+        else if (age === 5) depreciationRate = 0.50;
+        else if (age > 5) depreciationRate = 0.50 + ((age - 5) * 0.05);
+    }
+
+    const expectedKms = age * 12000;
+    if (k > expectedKms) depreciationRate += Math.min(((k - expectedKms) / 10000) * 0.015, 0.10);
+    else if (k > 0 && k < expectedKms) depreciationRate -= Math.min(((expectedKms - k) / 10000) * 0.01, 0.05);
+
+    let conditionMod = 1.0;
+    if (rating === 'Excellent') conditionMod = 1.05;
+    else if (rating === 'Very Good') conditionMod = 1.02;
+    else if (rating === 'Fair') conditionMod = 0.90;
+    else if (rating === 'Bad') conditionMod = 0.75;
+
+    const finalValue = baseValue * (1 - depreciationRate) * conditionMod;
+    return { min: Math.round(finalValue * 0.95), max: Math.round(finalValue * 1.05) };
+};
+
+const getDynamicDocuments = (product, occupation) => {
+  const loan = product || 'Personal Loan';
+  const emp = occupation || 'Salaried';
+  const isSalaried = emp.includes('Salaried');
+  const isSelfEmployed = emp.includes('Self Employed') || emp.includes('Business');
+  let docs = [];
+  docs.push({ key: 'pan', name: 'PAN Card', category: 'KYC Documents', mandatory: true });
+  docs.push({ key: 'aadhar', name: 'Aadhaar Card (Front & Back)', category: 'KYC Documents', mandatory: true });
+  docs.push({ key: 'photo', name: 'Passport Size Photograph', category: 'KYC Documents', mandatory: false });
+
+  if (isSalaried) {
+    docs.push({ key: 'salary_slips', name: 'Latest 3 Months Salary Slips', category: 'Income Proof', mandatory: true });
+    docs.push({ key: 'bank_statement_6m', name: '6 Month Bank Statement', category: 'Banking', mandatory: true });
+  } else if (isSelfEmployed) {
+    docs.push({ key: 'gst_cert', name: 'GST Certificate / Shop Act', category: 'Business Proof', mandatory: true });
+    docs.push({ key: 'itr_2yr', name: 'ITR 2/3 Years', category: 'Income Proof', mandatory: true });
+    docs.push({ key: 'bank_statement_12m', name: '12 Month Bank Statement', category: 'Banking', mandatory: true });
+  }
+  if (loan === 'Car Loan' || loan === 'CV Loan') {
+    docs.push({ key: 'vehicle_rc', name: 'Vehicle RC / Insurance', category: 'Vehicle Documents', mandatory: false });
+  }
+  return docs;
+};
+
+
+// --- HELPER COMPONENTS ---
+const Badge = ({ status }) => {
+  const styles = {
+    'New': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Pending': 'bg-amber-100 text-amber-800 border-amber-200',
+    'Converted': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'Rejected': 'bg-red-100 text-red-800 border-red-200',
+    'Completed': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'Paid': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    'Sanctioned': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'Disbursed': 'bg-teal-100 text-teal-800 border-teal-200',
+  };
+  return React.createElement('span', {
+    className: `px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide border rounded-md ${styles[status] || 'bg-slate-100 text-slate-800 border-slate-200'}`
+  }, status);
+};
+
+const KPICard = ({ title, value, trend, isPositive, onClick, valuePrefix }) => (
+  React.createElement('div', { onClick, className: "bg-white p-3 lg:p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-full" },
+    React.createElement('div', { className: "flex justify-between items-start mb-2" },
+      React.createElement('h3', { className: "text-slate-500 text-[10px] font-bold uppercase tracking-wider" }, title),
+      React.createElement('div', { className: `flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-md ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}` }, trend)
+    ),
+    React.createElement('div', { className: "text-xl font-black text-slate-800 tracking-tight mt-1" },
+      valuePrefix && React.createElement('span', { className: "text-sm text-slate-400 mr-1" }, valuePrefix),
+      value
+    )
+  )
+);
+
+const CustomConfirmModal = ({ config }) => {
+  if (!config) return null;
+  return React.createElement('div', { className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4" },
+    React.createElement('div', { className: "bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border" },
+      React.createElement('div', { className: "flex items-center gap-3 text-red-600 mb-3" },
+        React.createElement(AlertCircle, { size: 24 }),
+        React.createElement('h3', { className: "font-bold text-slate-800 text-base" }, "Confirm Action")
+      ),
+      React.createElement('p', { className: "text-slate-600 text-sm leading-relaxed mb-6" }, config.message),
+      React.createElement('div', { className: "flex justify-end gap-3" },
+        React.createElement('button', { onClick: config.onCancel, className: "px-4 py-2 border rounded-lg text-xs font-bold" }, "Cancel"),
+        React.createElement('button', { onClick: config.onConfirm, className: "px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold" }, "Confirm")
+      )
+    )
+  );
+};
+
+const CustomAlertModal = ({ config }) => {
+  if (!config) return null;
+  return React.createElement('div', { className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4" },
+    React.createElement('div', { className: "bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border" },
+      React.createElement('div', { className: "flex items-center gap-3 text-amber-500 mb-3" },
+        React.createElement(Info, { size: 24 }),
+        React.createElement('h3', { className: "font-bold text-slate-800 text-base" }, "Notice")
+      ),
+      React.createElement('p', { className: "text-slate-600 text-sm leading-relaxed mb-6" }, config.message),
+      React.createElement('button', { onClick: config.onClose, className: "w-full bg-indigo-700 text-white py-2 rounded-lg text-xs font-bold" }, "Understood")
+    )
+  );
+};
+
+
+// ===== SANCTION MODAL =====
+const SanctionModal = ({ record, onClose, setAlertConfig, onSave }) => {
+  const [form, setForm] = useState({
+    sanctionedAmount: record?.sanctionDetails?.sanctionedAmount || parseFloat((record?.amount || '500000').replace(/[^0-9]/g, '')) || 500000,
+    roi: record?.sanctionDetails?.roi || 10.5,
+    tenure: record?.sanctionDetails?.tenure || 36,
+    payoutToType: record?.sanctionDetails?.payoutToType || 'Dealer',
+    payoutToName: record?.sanctionDetails?.payoutToName || '',
+    docChargesAmount: record?.sanctionDetails?.docChargesAmount || 5000,
+    otherChargesAmount: record?.sanctionDetails?.otherChargesAmount || 2000,
+    payoutAmount: record?.sanctionDetails?.payoutAmount || 15000,
+  });
+
+  const calculatedEmi = useMemo(() => {
+    const P = form.sanctionedAmount;
+    const r = form.roi / 100 / 12;
+    const n = form.tenure;
+    if (r === 0) return P / n;
+    return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  }, [form.sanctionedAmount, form.roi, form.tenure]);
+
+  const handleSave = () => {
+    if (!form.sanctionedAmount || form.sanctionedAmount <= 0) {
+      return setAlertConfig({ message: "Sanctioned amount must be greater than 0.", onClose: () => setAlertConfig(null) });
+    }
+    onSave({ ...form, calculated: { emi: Math.round(calculatedEmi), docChargesAmount: form.docChargesAmount, otherChargesAmount: form.otherChargesAmount, payoutAmount: form.payoutAmount } });
+  };
+
+  return React.createElement('div', { className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 overflow-y-auto" },
+    React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8" },
+      React.createElement('div', { className: "px-6 py-4 border-b flex justify-between bg-slate-50" },
+        React.createElement('h3', { className: "font-black text-lg" }, "Sanction Loan - " + (record?.id || '')),
+        React.createElement('button', { onClick: onClose }, React.createElement(X, { size: 20 }))
+      ),
+      React.createElement('div', { className: "p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" },
+        React.createElement('div', { className: "md:col-span-2" },
+          React.createElement('label', { className: "text-xs font-bold" }, "Sanctioned Amount"),
+          React.createElement('input', { type: "number", value: form.sanctionedAmount, onChange: (e) => setForm({...form, sanctionedAmount: parseFloat(e.target.value)}), className: "w-full border p-2 rounded mt-1" })
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { className: "text-xs font-bold" }, "ROI (%)"),
+          React.createElement('input', { type: "number", step: "0.1", value: form.roi, onChange: (e) => setForm({...form, roi: parseFloat(e.target.value)}), className: "w-full border p-2 rounded mt-1" })
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { className: "text-xs font-bold" }, "Tenure (Months)"),
+          React.createElement('input', { type: "number", value: form.tenure, onChange: (e) => setForm({...form, tenure: parseInt(e.target.value)}), className: "w-full border p-2 rounded mt-1" })
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { className: "text-xs font-bold" }, "Doc Charges"),
+          React.createElement('input', { type: "number", value: form.docChargesAmount, onChange: (e) => setForm({...form, docChargesAmount: parseFloat(e.target.value)}), className: "w-full border p-2 rounded mt-1" })
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { className: "text-xs font-bold" }, "Payout Amount"),
+          React.createElement('input', { type: "number", value: form.payoutAmount, onChange: (e) => setForm({...form, payoutAmount: parseFloat(e.target.value)}), className: "w-full border p-2 rounded mt-1" })
+        ),
+        React.createElement('div', { className: "md:col-span-2 bg-emerald-50 p-4 rounded-xl border border-emerald-200" },
+          React.createElement('p', { className: "text-xs font-bold text-emerald-700" }, "Calculated Monthly EMI"),
+          React.createElement('p', { className: "text-3xl font-black text-emerald-600" }, "\u20B9" + Math.round(calculatedEmi).toLocaleString('en-IN'))
+        )
+      ),
+      React.createElement('div', { className: "px-6 py-4 border-t flex justify-end gap-3" },
+        React.createElement('button', { onClick: onClose, className: "px-5 py-2 border rounded-lg text-xs font-bold" }, "Cancel"),
+        React.createElement('button', { onClick: handleSave, className: "px-5 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold" }, "Approve & Sanction")
+      )
+    )
+  );
+};
+
+
+// ===== DISBURSAL MODAL =====
+const DisbursalModal = ({ record, onClose, onSave }) => {
+  const [form, setForm] = useState({
+    netDisbursalAmount: record?.disbursalDetails?.netDisbursalAmount || (record?.sanctionDetails?.sanctionedAmount || 0),
+    disbursalDate: record?.disbursalDetails?.disbursalDate || new Date().toISOString().split('T')[0],
+    referenceNumber: record?.disbursalDetails?.referenceNumber || "UTR" + Date.now().toString().slice(-8),
+    bankName: record?.disbursalDetails?.bankName || 'HDFC Bank',
+    mode: record?.disbursalDetails?.mode || 'NEFT'
+  });
+  return React.createElement('div', { className: "fixed inset-0 bg-slate-900/60 z-[150] flex items-center justify-center p-4" },
+    React.createElement('div', { className: "bg-white rounded-2xl w-full max-w-md shadow-2xl" },
+      React.createElement('div', { className: "px-6 py-4 border-b flex justify-between" },
+        React.createElement('h3', { className: "font-black" }, "Disburse Loan - " + (record?.id || '')),
+        React.createElement('button', { onClick: onClose }, React.createElement(X, { size: 20 }))
+      ),
+      React.createElement('div', { className: "p-6 space-y-4 text-sm" },
+        React.createElement('div', null, React.createElement('label', { className: "text-xs font-bold" }, "Net Disbursal Amount"), React.createElement('input', { type: "number", value: form.netDisbursalAmount, onChange: (e) => setForm({...form, netDisbursalAmount: parseFloat(e.target.value)}), className: "w-full border p-2 rounded mt-1" })),
+        React.createElement('div', null, React.createElement('label', { className: "text-xs font-bold" }, "Disbursal Date"), React.createElement('input', { type: "date", value: form.disbursalDate, onChange: (e) => setForm({...form, disbursalDate: e.target.value}), className: "w-full border p-2 rounded mt-1" })),
+        React.createElement('div', null, React.createElement('label', { className: "text-xs font-bold" }, "UTR / Reference"), React.createElement('input', { value: form.referenceNumber, onChange: (e) => setForm({...form, referenceNumber: e.target.value}), className: "w-full border p-2 rounded mt-1" })),
+        React.createElement('div', null, React.createElement('label', { className: "text-xs font-bold" }, "Bank Name"), React.createElement('input', { value: form.bankName, onChange: (e) => setForm({...form, bankName: e.target.value}), className: "w-full border p-2 rounded mt-1" })),
+        React.createElement('div', null, React.createElement('label', { className: "text-xs font-bold" }, "Mode"), React.createElement('select', { value: form.mode, onChange: (e) => setForm({...form, mode: e.target.value}), className: "w-full border p-2 rounded mt-1" }, React.createElement('option', null, "NEFT"), React.createElement('option', null, "RTGS"), React.createElement('option', null, "UPI")))
+      ),
+      React.createElement('div', { className: "px-6 py-4 border-t flex justify-end gap-3" },
+        React.createElement('button', { onClick: onClose, className: "px-5 py-2 border rounded text-xs font-bold" }, "Cancel"),
+        React.createElement('button', { onClick: () => onSave(form), className: "px-5 py-2 bg-teal-600 text-white rounded text-xs font-bold" }, "Confirm Disbursal")
+      )
+    )
+  );
+};
+
+
+// ===== ENQUIRIES LIST VIEW =====
+const EnquiriesView = ({ enquiries, lenders, onAddEnquiry, onDeleteEnquiry, onUpdateEnquiry, onMoveToSanction, setConfirmConfig }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionMenuId, setActionMenuId] = useState(null);
+
+  useEffect(() => {
+    const close = () => setActionMenuId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
+
+  const filtered = enquiries.filter(enq => enq.name.toLowerCase().includes(searchTerm.toLowerCase()) || enq.id.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  return React.createElement('div', { className: "p-4 lg:p-5 w-full h-full flex flex-col" },
+    React.createElement('div', { className: "flex justify-between items-center mb-4" },
+      React.createElement('div', null,
+        React.createElement('h1', { className: "text-xl font-black text-slate-900 flex items-center gap-2" }, React.createElement(HelpCircle, { size: 24, className: "text-indigo-600" }), " Enquiries"),
+        React.createElement('p', { className: "text-slate-500 text-xs mt-1" }, "Manage customer enquiries and leads")
+      ),
+      React.createElement('button', { onClick: onAddEnquiry, className: "bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5" },
+        React.createElement(Plus, { size: 14 }), " Add Enquiry"
+      )
+    ),
+    React.createElement('div', { className: "bg-white p-3 rounded-xl border shadow-sm flex gap-2 items-center mb-4" },
+      React.createElement('div', { className: "relative flex-1" },
+        React.createElement(Search, { className: "absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400", size: 14 }),
+        React.createElement('input', { type: "text", placeholder: "Search...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full pl-8 pr-3 py-1.5 bg-slate-50 border rounded-lg text-xs outline-none" })
+      )
+    ),
+    React.createElement('div', { className: "flex-1 bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col" },
+      React.createElement('div', { className: "overflow-x-auto flex-1" },
+        React.createElement('table', { className: "w-full text-left text-xs text-slate-600" },
+          React.createElement('thead', { className: "bg-slate-50 text-slate-500 font-semibold border-b sticky top-0" },
+            React.createElement('tr', null,
+              React.createElement('th', { className: "px-4 py-3" }, "ID"),
+              React.createElement('th', { className: "px-4 py-3" }, "Customer"),
+              React.createElement('th', { className: "px-4 py-3" }, "Loan Type"),
+              React.createElement('th', { className: "px-4 py-3" }, "Amount"),
+              React.createElement('th', { className: "px-4 py-3" }, "Status"),
+              React.createElement('th', { className: "px-4 py-3 text-right" }, "Actions")
+            )
+          ),
+          React.createElement('tbody', { className: "divide-y divide-slate-100" },
+            filtered.length === 0 ?
+              React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "px-4 py-16 text-center text-slate-400" }, "No enquiries found")) :
+              filtered.map((enq) =>
+                React.createElement('tr', { key: enq.id, className: "hover:bg-slate-50 transition-colors" },
+                  React.createElement('td', { className: "px-4 py-3" }, React.createElement('span', { className: "font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded" }, enq.id)),
+                  React.createElement('td', { className: "px-4 py-3 font-bold text-slate-900" }, enq.name),
+                  React.createElement('td', { className: "px-4 py-3" }, enq.loanType),
+                  React.createElement('td', { className: "px-4 py-3 font-black" }, enq.amount || '\u20B90'),
+                  React.createElement('td', { className: "px-4 py-3" }, React.createElement(Badge, { status: enq.status })),
+                  React.createElement('td', { className: "px-4 py-3 text-right" },
+                    React.createElement('div', { className: "flex items-center justify-end gap-2", onClick: (e) => e.stopPropagation() },
+                      React.createElement('button', { onClick: () => downloadPDF(enq), className: "text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-md text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-100", title: "Download PDF" },
+                        React.createElement(Download, { size: 12 }), " PDF"
+                      ),
+                      React.createElement('button', { onClick: () => onMoveToSanction(enq), className: "text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-md text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-100" },
+                        React.createElement(CheckCircle, { size: 12 }), " Sanction"
+                      ),
+                      React.createElement('button', { onClick: () => { setConfirmConfig({ message: 'Delete ' + enq.name + '?', onConfirm: () => { onDeleteEnquiry(enq.id); setConfirmConfig(null); }, onCancel: () => setConfirmConfig(null) }); }, className: "text-red-500 bg-red-50 p-1.5 rounded-md hover:bg-red-100" },
+                        React.createElement(Trash2, { size: 14 })
+                      )
+                    )
+                  )
+                )
+              )
+          )
+        )
+      )
+    )
+  );
+};
+
+
+// ===== SANCTIONS VIEW =====
+const SanctionsView = ({ enquiries, onEdit, onReject, onMoveToDisbursal }) => {
+  const filtered = enquiries.filter(e => e.status === 'Sanctioned' || e.sanctionDetails);
+  return React.createElement('div', { className: "p-4 lg:p-5 w-full h-full flex flex-col" },
+    React.createElement('h1', { className: "text-xl font-black text-slate-900 flex items-center gap-2 mb-4" }, React.createElement(CheckCircle, { size: 24, className: "text-emerald-600" }), " Sanctions Queue"),
+    React.createElement('div', { className: "flex-1 bg-white rounded-xl border shadow-sm overflow-hidden" },
+      React.createElement('table', { className: "w-full text-left text-xs text-slate-600" },
+        React.createElement('thead', { className: "bg-slate-50 border-b" },
+          React.createElement('tr', null,
+            React.createElement('th', { className: "px-4 py-3" }, "ID"),
+            React.createElement('th', { className: "px-4 py-3" }, "Customer"),
+            React.createElement('th', { className: "px-4 py-3" }, "Sanctioned"),
+            React.createElement('th', { className: "px-4 py-3" }, "EMI"),
+            React.createElement('th', { className: "px-4 py-3" }, "Status"),
+            React.createElement('th', { className: "px-4 py-3 text-right" }, "Actions")
+          )
+        ),
+        React.createElement('tbody', { className: "divide-y" },
+          filtered.length === 0 ?
+            React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "px-4 py-16 text-center text-slate-400" }, "No sanctions pending")) :
+            filtered.map(enq => React.createElement('tr', { key: enq.id, className: "hover:bg-slate-50" },
+              React.createElement('td', { className: "px-4 py-3 font-bold text-emerald-600" }, enq.id),
+              React.createElement('td', { className: "px-4 py-3 font-bold" }, enq.name),
+              React.createElement('td', { className: "px-4 py-3 font-black" }, "\u20B9" + (enq.sanctionDetails?.sanctionedAmount?.toLocaleString() || '0')),
+              React.createElement('td', { className: "px-4 py-3" }, "\u20B9" + (enq.sanctionDetails?.calculated?.emi?.toLocaleString() || '0')),
+              React.createElement('td', { className: "px-4 py-3" }, React.createElement(Badge, { status: enq.status })),
+              React.createElement('td', { className: "px-4 py-3 text-right" },
+                React.createElement('div', { className: "flex items-center justify-end gap-2" },
+                  React.createElement('button', { onClick: () => onMoveToDisbursal(enq), className: "text-teal-600 bg-teal-50 px-2 py-1 rounded text-[10px] font-bold" }, "Disburse"),
+                  React.createElement('button', { onClick: () => downloadPDF(enq), className: "text-emerald-600 bg-emerald-50 p-1.5 rounded" }, React.createElement(Download, { size: 14 })),
+                  React.createElement('button', { onClick: () => onReject(enq), className: "text-red-500 bg-red-50 p-1.5 rounded" }, React.createElement(XCircle, { size: 14 }))
+                )
+              )
+            ))
+        )
+      )
+    )
+  );
+};
+
+
+// ===== DISBURSALS VIEW =====
+const DisbursalsView = ({ enquiries }) => {
+  const filtered = enquiries.filter(e => e.status === 'Disbursed' || e.disbursalDetails);
+  return React.createElement('div', { className: "p-4 lg:p-5 w-full h-full flex flex-col" },
+    React.createElement('h1', { className: "text-xl font-black text-slate-900 flex items-center gap-2 mb-4" }, React.createElement(Wallet, { size: 24, className: "text-teal-600" }), " Disbursals"),
+    React.createElement('div', { className: "flex-1 bg-white rounded-xl border shadow-sm overflow-hidden" },
+      React.createElement('table', { className: "w-full text-left text-xs text-slate-600" },
+        React.createElement('thead', { className: "bg-slate-50 border-b" },
+          React.createElement('tr', null,
+            React.createElement('th', { className: "px-4 py-3" }, "ID"),
+            React.createElement('th', { className: "px-4 py-3" }, "Customer"),
+            React.createElement('th', { className: "px-4 py-3" }, "Net Disbursed"),
+            React.createElement('th', { className: "px-4 py-3" }, "Date"),
+            React.createElement('th', { className: "px-4 py-3" }, "UTR"),
+            React.createElement('th', { className: "px-4 py-3 text-right" }, "Actions")
+          )
+        ),
+        React.createElement('tbody', { className: "divide-y" },
+          filtered.length === 0 ?
+            React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "px-4 py-16 text-center text-slate-400" }, "No disbursals")) :
+            filtered.map(enq => React.createElement('tr', { key: enq.id, className: "hover:bg-slate-50" },
+              React.createElement('td', { className: "px-4 py-3 font-bold text-teal-600" }, enq.id),
+              React.createElement('td', { className: "px-4 py-3 font-bold" }, enq.name),
+              React.createElement('td', { className: "px-4 py-3 font-black" }, "\u20B9" + (enq.disbursalDetails?.netDisbursalAmount?.toLocaleString() || '0')),
+              React.createElement('td', { className: "px-4 py-3" }, enq.disbursalDetails?.disbursalDate || 'N/A'),
+              React.createElement('td', { className: "px-4 py-3 text-slate-500" }, enq.disbursalDetails?.referenceNumber || 'N/A'),
+              React.createElement('td', { className: "px-4 py-3 text-right" },
+                React.createElement('button', { onClick: () => downloadPDF(enq), className: "text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-md text-[10px] font-bold flex items-center gap-1 ml-auto" },
+                  React.createElement(Download, { size: 12 }), " Download PDF"
+                )
+              )
+            ))
+        )
+      )
+    )
+  );
+};
+
+// ===== DASHBOARD VIEW =====
+const DashboardView = ({ enquiries, onNavigate }) => {
+  const totalEnquiries = enquiries.length;
+  const totalAmount = enquiries.reduce((sum, e) => sum + (parseFloat((e.amount || '0').toString().replace(/[^0-9.-]+/g,"")) || 0), 0);
+  return React.createElement('div', { className: "p-4 lg:p-5 w-full h-full flex flex-col bg-[#F8FAFC]" },
+    React.createElement('h1', { className: "text-xl font-black text-slate-900 flex items-center gap-2 mb-6" }, React.createElement(LayoutDashboard, { size: 24, className: "text-indigo-600" }), " Dashboard"),
+    React.createElement('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" },
+      React.createElement(KPICard, { title: "Total Enquiries", value: totalEnquiries, trend: "Lifetime", isPositive: true, onClick: () => onNavigate('enquiries') }),
+      React.createElement(KPICard, { title: "Pipeline Value", value: totalAmount.toLocaleString('en-IN'), valuePrefix: "\u20B9", trend: "Active", isPositive: true }),
+      React.createElement(KPICard, { title: "Sanctioned", value: enquiries.filter(e => e.status === 'Sanctioned').length, trend: "Approved", isPositive: true }),
+      React.createElement(KPICard, { title: "Disbursed", value: enquiries.filter(e => e.status === 'Disbursed').length, trend: "Funds Out", isPositive: true })
+    ),
+    React.createElement('div', { className: "flex-1 bg-white rounded-xl border shadow-sm p-6 flex flex-col" },
+      React.createElement('h3', { className: "font-bold text-slate-800 text-sm mb-4" }, "Recent Activity"),
+      React.createElement('div', { className: "divide-y flex-1" },
+        enquiries.slice(0, 8).map(e =>
+          React.createElement('div', { key: e.id, className: "py-3 flex justify-between items-center hover:bg-slate-50 px-2 rounded cursor-pointer", onClick: () => onNavigate('enquiries') },
+            React.createElement('div', null,
+              React.createElement('p', { className: "font-bold text-sm text-slate-800" }, e.name),
+              React.createElement('p', { className: "text-xs text-slate-500" }, e.loanType + " - " + (e.amount || ''))
+            ),
+            React.createElement('div', { className: "flex items-center gap-2" },
+              React.createElement(Badge, { status: e.status }),
+              React.createElement('button', { onClick: (ev) => { ev.stopPropagation(); downloadPDF(e); }, className: "text-emerald-600 bg-emerald-50 p-1.5 rounded hover:bg-emerald-100", title: "Download PDF" },
+                React.createElement(Download, { size: 14 })
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+};
+
+
+// ===== REJECTS VIEW =====
+const RejectsView = ({ enquiries }) => {
+  const filtered = enquiries.filter(e => e.status === 'Rejected');
+  return React.createElement('div', { className: "p-4 lg:p-5 w-full h-full flex flex-col" },
+    React.createElement('h1', { className: "text-xl font-black text-slate-900 flex items-center gap-2 mb-4" }, React.createElement(XCircle, { size: 24, className: "text-red-600" }), " Rejected Applications"),
+    React.createElement('div', { className: "flex-1 bg-white rounded-xl border shadow-sm overflow-hidden" },
+      filtered.length === 0 ?
+        React.createElement('div', { className: "flex items-center justify-center h-64 text-slate-400" }, "No rejected records") :
+        React.createElement('table', { className: "w-full text-left text-xs" },
+          React.createElement('thead', { className: "bg-slate-50 border-b" },
+            React.createElement('tr', null,
+              React.createElement('th', { className: "px-4 py-3" }, "ID"),
+              React.createElement('th', { className: "px-4 py-3" }, "Customer"),
+              React.createElement('th', { className: "px-4 py-3" }, "Loan Type"),
+              React.createElement('th', { className: "px-4 py-3 text-right" }, "PDF")
+            )
+          ),
+          React.createElement('tbody', { className: "divide-y" },
+            filtered.map(enq => React.createElement('tr', { key: enq.id, className: "hover:bg-slate-50" },
+              React.createElement('td', { className: "px-4 py-3 font-bold text-red-600" }, enq.id),
+              React.createElement('td', { className: "px-4 py-3 font-bold" }, enq.name),
+              React.createElement('td', { className: "px-4 py-3" }, enq.loanType),
+              React.createElement('td', { className: "px-4 py-3 text-right" },
+                React.createElement('button', { onClick: () => downloadPDF(enq), className: "text-emerald-600 bg-emerald-50 p-1.5 rounded" }, React.createElement(Download, { size: 14 }))
+              )
+            ))
+          )
+        )
+    )
+  );
+};
+
+// ===== PLACEHOLDER VIEW =====
+const PlaceholderView = ({ title }) => (
+  React.createElement('div', { className: "p-5 flex flex-col items-center justify-center h-full text-slate-500 bg-white m-5 rounded-xl border" },
+    React.createElement(Layers, { size: 48, className: "mb-4 text-slate-300" }),
+    React.createElement('h2', { className: "text-xl font-bold text-slate-700" }, title),
+    React.createElement('p', { className: "text-sm mt-2" }, "This module is pending integration.")
+  )
+);
+
+
+// ========== MAIN APP COMPONENT ==========
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeModule, setActiveModule] = useState('enquiries');
+  const [enquiries, setEnquiries] = useState(initialEnquiries);
+  const [lenders, setLenders] = useState(initialLenders);
+  const [sanctionRecord, setSanctionRecord] = useState(null);
+  const [disbursalRecord, setDisbursalRecord] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [alertConfig, setAlertConfig] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => window.innerWidth < 1024 ? setSidebarOpen(false) : setSidebarOpen(true);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleReject = (record) => {
+    setConfirmConfig({
+      message: "Reject sanction for " + record.name + "?",
+      onConfirm: () => {
+        setEnquiries(enquiries.map(e => e.id === record.id ? { ...e, status: 'Rejected' } : e));
+        setActiveModule('rejects');
+        setConfirmConfig(null);
+      },
+      onCancel: () => setConfirmConfig(null)
+    });
+  };
+
+  // Render active module content
+  const renderContent = () => {
+    switch(activeModule) {
+      case 'dashboard':
+        return React.createElement(DashboardView, { enquiries, onNavigate: setActiveModule });
+      case 'enquiries':
+        return React.createElement(EnquiriesView, {
+          enquiries, lenders,
+          onAddEnquiry: () => {},
+          onDeleteEnquiry: (id) => setEnquiries(enquiries.filter(e => e.id !== id)),
+          onUpdateEnquiry: (u) => setEnquiries(enquiries.map(e => e.id === u.id ? u : e)),
+          onMoveToSanction: (r) => setSanctionRecord(r),
+          setConfirmConfig
+        });
+      case 'sanctions':
+        return React.createElement(SanctionsView, {
+          enquiries,
+          onEdit: (r) => setSanctionRecord(r),
+          onReject: handleReject,
+          onMoveToDisbursal: (r) => setDisbursalRecord(r)
+        });
+      case 'disbursals':
+        return React.createElement(DisbursalsView, { enquiries });
+      case 'rejects':
+        return React.createElement(RejectsView, { enquiries });
+      default:
+        return React.createElement(PlaceholderView, { title: navGroups.flatMap(g => g.items).find(i => i.id === activeModule)?.name || 'Module' });
+    }
+  };
+
+
+  return React.createElement('div', { className: "flex h-screen w-full bg-[#F8FAFC] font-sans overflow-hidden" },
+    // Global Modals
+    React.createElement(CustomConfirmModal, { config: confirmConfig }),
+    React.createElement(CustomAlertModal, { config: alertConfig }),
+
+    // Sanction Modal
+    sanctionRecord && React.createElement(SanctionModal, {
+      record: sanctionRecord,
+      onClose: () => setSanctionRecord(null),
+      setAlertConfig,
+      onSave: (sanctionDetails) => {
+        setEnquiries(enquiries.map(e => e.id === sanctionRecord.id ? { ...e, status: 'Sanctioned', sanctionDetails } : e));
+        setSanctionRecord(null);
+        setActiveModule('sanctions');
+      }
+    }),
+
+    // Disbursal Modal
+    disbursalRecord && React.createElement(DisbursalModal, {
+      record: disbursalRecord,
+      onClose: () => setDisbursalRecord(null),
+      onSave: (disbursalDetails) => {
+        setEnquiries(enquiries.map(e => e.id === disbursalRecord.id ? { ...e, status: 'Disbursed', disbursalDetails } : e));
+        setDisbursalRecord(null);
+        setActiveModule('disbursals');
+      }
+    }),
+
+    // Sidebar
+    React.createElement('aside', { className: `bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 z-30 ${sidebarOpen ? 'w-56' : 'w-16'} flex-shrink-0 shadow-xl hidden md:flex` },
+      // Logo
+      React.createElement('div', { className: "h-14 flex items-center px-4 border-b border-slate-800" },
+        React.createElement('div', { className: "w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg" },
+          React.createElement(Briefcase, { size: 18, className: "text-white" })
+        ),
+        sidebarOpen && React.createElement('span', { className: "ml-2.5 text-white font-black text-lg tracking-tight" }, "MyLoanCRM")
+      ),
+      // Nav Groups
+      React.createElement('div', { className: "flex-1 overflow-y-auto scrollbar-hide py-4 px-2.5 space-y-5" },
+        navGroups.map((group, gIdx) =>
+          React.createElement('div', { key: gIdx },
+            sidebarOpen && React.createElement('p', { className: "text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-1.5" }, group.title),
+            React.createElement('nav', { className: "space-y-1" },
+              group.items.map(item => {
+                const Icon = item.icon;
+                const isActive = activeModule === item.id;
+                return React.createElement('button', {
+                  key: item.name,
+                  onClick: () => setActiveModule(item.id),
+                  className: `w-full flex items-center px-2.5 py-2 rounded-lg transition-all ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'}`,
+                  title: !sidebarOpen ? item.name : ""
+                },
+                  React.createElement(Icon, { size: 16, className: `flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}` }),
+                  sidebarOpen && React.createElement('span', { className: `ml-2.5 text-xs font-semibold ${isActive ? '' : 'text-slate-300'}` }, item.name)
+                );
+              })
+            )
+          )
+        )
+      ),
+      // Toggle Button
+      React.createElement('button', {
+        onClick: () => setSidebarOpen(!sidebarOpen),
+        className: "absolute -right-3 top-20 bg-white border text-slate-600 p-1 rounded-full shadow-md z-40 hidden lg:flex hover:text-indigo-600"
+      }, React.createElement(ChevronRight, { size: 14, className: `transition-transform ${sidebarOpen ? 'rotate-180' : ''}` }))
+    ),
+
+
+    // Main Content Area
+    React.createElement('main', { className: "flex-1 flex flex-col min-w-0 h-screen overflow-hidden" },
+      // Top Header
+      React.createElement('header', { className: "h-14 bg-white border-b flex items-center justify-between px-4 lg:px-5 z-20 shadow-sm" },
+        React.createElement('div', { className: "flex items-center gap-3" },
+          React.createElement('button', { onClick: () => setSidebarOpen(!sidebarOpen), className: "md:hidden text-slate-500 p-1.5 rounded-md hover:bg-slate-100" },
+            React.createElement(Menu, { size: 20 })
+          ),
+          React.createElement('h2', { className: "text-sm font-bold text-slate-700 hidden sm:block" }, "Professional Loan Management System")
+        ),
+        React.createElement('div', { className: "flex items-center gap-3" },
+          React.createElement('button', {
+            onClick: () => { downloadPDF(enquiries[0]); },
+            className: "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center gap-1.5 shadow-sm"
+          }, React.createElement(Download, { size: 14 }), " Quick PDF Demo"),
+          React.createElement('button', {
+            onClick: () => setActiveModule('enquiries'),
+            className: "bg-indigo-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700 flex items-center gap-1.5 shadow-sm"
+          }, React.createElement(Plus, { size: 14 }), " New Lead")
+        )
+      ),
+
+      // Page Content
+      React.createElement('div', { className: "flex-1 w-full overflow-y-auto scrollbar-hide" },
+        renderContent()
+      )
+    )
+  );
+}
+
+// ===== RENDER APP =====
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+
+
+    </script>
 </body>
 </html>
